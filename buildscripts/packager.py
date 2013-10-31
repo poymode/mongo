@@ -42,13 +42,13 @@ import urlparse
 # repositories to the world, so the last thing the program does is
 # move the repositories into place.  Make this be the path where the
 # web server will look for repositories.
-REPOPATH="/var/www/repo"
+REPOPATH="/tmp/repo"
 
 # The 10gen names for the architectures we support.
-ARCHES=["i686", "x86_64"]
+ARCHES=["x86_64"]
 
 # Made up names for the flavors of distribution we package for.
-DISTROS=["debian-sysvinit", "ubuntu-upstart", "redhat"]
+DISTROS=["redhat"]
 
 # When we're preparing a directory containing packaging tool inputs
 # and our binaries, use this relative subdirectory for placing the
@@ -155,7 +155,8 @@ def main(argv):
 
     # We do all our work in a randomly-created directory. You can set
     # TEMPDIR to influence where this program will do stuff.
-    prefix=tempfile.mkdtemp()
+#    prefix=tempfile.mkdtemp()
+    prefix="/tmp"
     print "Working in directory %s" % prefix
 
     # This will be a list of directories where we put packages in
@@ -182,9 +183,10 @@ def main(argv):
     finally:
         os.chdir(oldcwd)
     if "-n" not in flags:
-        move_repos_into_place(prefix+"/repo", REPOPATH)
+        print "Done"
+        #move_repos_into_place(prefix+"/repo", REPOPATH)
         # FIXME: try shutil.rmtree some day.
-        sysassert(["rm", "-rv", prefix])
+        #sysassert(["rm", "-rv", prefix])
 
 def parse_args(args):
     if len(args) == 0:
@@ -282,20 +284,20 @@ def httpget(url, filename):
     assert(u.scheme=='http')
     try:
         conn = httplib.HTTPConnection(u.hostname)
-        conn.request("GET", u.path)
-        t=filename+'.TMP'
-        res = conn.getresponse()
-        # FIXME: follow redirects
-        if res.status==200:
-            f = open(t, 'w')
-            try:
-                f.write(res.read())
-            finally:
-                f.close()
-                
-        else:
-            raise Exception("HTTP error %d" % res.status)
-        os.rename(t, filename)
+#        conn.request("GET", u.path)
+#        t=filename+'.TMP'
+#        res = conn.getresponse()
+#        # FIXME: follow redirects
+#        if res.status==200:
+#            f = open(t, 'w')
+#            try:
+#                f.write(res.read())
+#            finally:
+#                f.close()
+#                
+#        else:
+#            raise Exception("HTTP error %d" % res.status)
+#        os.rename(t, filename)
     finally:
         if conn:
             conn.close()
@@ -333,7 +335,7 @@ def make_package(distro, arch, spec, srcdir):
     for pkgdir in ["debian", "rpm"]:
         print "Copying packaging files from %s to %s" % ("%s/%s" % (srcdir, pkgdir), sdir)
         # FIXME: sh-dash-cee is bad. See if tarfile can do this.
-        sysassert(["sh", "-c", "(cd \"%s\" && git archive r%s %s/ ) | (cd \"%s\" && tar xvf -)" % (srcdir, spec.version(), pkgdir, sdir)])
+#        sysassert(["sh", "-c", "(cd \"%s\" && git archive r%s %s/ ) | (cd \"%s\" && tar xvf -)" % (srcdir, spec.version(), pkgdir, sdir)])
     # Splat the binaries under sdir.  The "build" stages of the
     # packaging infrastructure will move the binaries to wherever they
     # need to go.  
@@ -745,7 +747,7 @@ def make_rpm(distro, arch, spec, srcdir):
         macrofiles=macrofiles[0]+":"+macropath
         rcfile=os.getcwd()+"/rpmrc"
         write_rpmrc_file(rcfile, macrofiles)
-        flags=["--rpmrc", rcfile]
+        flags=["--rcfile", rcfile]
     else:
         # This hard-coded hooey came from some box running RPM
         # 4.4.2.3.  It may not work over time, but RPM isn't sanely
